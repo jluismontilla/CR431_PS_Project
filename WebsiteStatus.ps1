@@ -2,7 +2,7 @@
 #Cette fonction permet de tester si une page web au choix est active ou non en retournant un TRUE ou FALSE.
 #Cette fonction 
 #Exemple de comment lancer la commande: Test-WebsiteStatus -URL "https://google.com"
-function Test-WebsiteStatus {
+function Test_WebsiteStatus {
     param (
         [string]$URL
     )
@@ -61,19 +61,79 @@ function Test-WebsiteStatus {
 
 
 
-function Monitor-Websites {
+
+function WebsiteStatus_ToCSV {
     param (
-        [string[]]$Websites,
+        [string[]]$Websites, #Paramètre qui va nous permettre de lister les pages webs désirés
         [string]$LogFile = "C:\Logs\WebsiteStatus.csv"
     )
 
-    if (!(Test-Path $LogFile)) {
-        "Timestamp,Website,Status" | Out-File -FilePath $LogFile
+    # Create log folder if it doesn't exist
+    $logFolder = Split-Path $LogFile
+    if (-not (Test-Path $logFolder)) {
+        New-Item -ItemType Directory -Path $logFolder -Force | Out-Null #Creation du fichier Logs sous C:\Logs s'il n'existe pas.
     }
 
-    foreach ($site in $Websites) {
-        $status = Test-WebsiteStatus -URL $site
+    foreach ($site in $Websites) { #Boucle qui passe par chaque page web listé pour avoir son status (200,300,400)
         $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        $status = "ERROR"
+
+        try {
+            $Headers = @{
+                "User-Agent" = "Mozilla/5.0" #Si je ne me fait pas passer par un faux moteur de recherche sur mon laptop, je n'est aucune donnée. Ceci m'a été recommandé par ChatGPT.
+            }
+            #Invoke-WebRequest envoie une requete HTTP GET à l'URL dans $site. -Headers inclus le faux moteur de recherche si-haut et -TimeoutSec 5 retourne un "Error" si la page web ne répond pas après 5 secondes.
+            $response = Invoke-WebRequest -Uri $site -Headers $Headers -TimeoutSec 5 
+            $status = $response.StatusCode
+        }
+        catch {
+            
+        }
+
+        #"$timestamp,$site,$status" vont être les titres de chaques colonne dans le fichier CSV. 
         "$timestamp,$site,$status" | Out-File -Append -FilePath $LogFile
     }
+
+    Write-Output "Monitoring terminé. Résultats dans le fichier Logs dans C:\Logs"
 }
+
+function Start_MonitoringLoop {
+    param (
+        [string[]]$Websites,
+        [int]$IntervalMinutes = 5,
+        [string]$LogFile = "C:\Logs\WebsiteStatus.csv"
+    )
+
+    # Create log folder if it doesn't exist
+    $logFolder = Split-Path $LogFile
+    if (-not (Test-Path $logFolder)) {
+        New-Item -ItemType Directory -Path $logFolder -Force | Out-Null
+    }
+
+    # Create CSV header if the file doesn't exist
+    if (-not (Test-Path $LogFile)) {
+        "Horodatage,URL,Statut" | Out-File -FilePath $LogFile -Encoding UTF8
+    }
+
+    Write-Host "Démarrage du monitoring toutes les $IntervalMinutes minute(s)... Appuyez sur CTRL+C pour arrêter." -ForegroundColor Cyan
+
+    while ($true) {
+        foreach ($site in $Websites) {
+            $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+            $status = "ERROR"
+
+            try {
+                $Headers = @{ "User-Agent" = "Mozilla/5.0" }
+                $response = Invoke-WebRequest -Uri $site -Headers $Headers -UseBasicParsing -TimeoutSec 5
+                $status = $response.StatusCode
+            } catch {
+                # Keep "ERROR" if request fails
+            }
+
+            "$timestamp,$site,$status" | Out-File -Append -FilePath $LogFile -Encoding UTF8
+        }
+
+        Start-Sleep -Seconds ($IntervalMinutes * 60)
+    }
+}
+
