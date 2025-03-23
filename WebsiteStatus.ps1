@@ -137,3 +137,27 @@ function Start_MonitoringLoop {
     }
 }
 
+function Send-DowntimeAlert {
+    param (
+        [string]$Website,
+        [string]$RecipientEmail,
+        [string]$SMTPServer = "smtp.example.com",
+        [string]$SenderEmail = "alert@example.com"
+    )
+
+    $Subject = "⚠️ Website Down Alert: $Website"
+    $Body = "The website $Website is currently unreachable."
+
+    $SMTPParams = @{
+        To       = $RecipientEmail
+        From     = $SenderEmail
+        Subject  = $Subject
+        Body     = $Body
+        SmtpServer = $SMTPServer
+    }
+
+    Send-MailMessage @SMTPParams
+}
+
+#How to use it: Send-DowntimeAlert -Website "https://example.com" -RecipientEmail "admin@example.com"
+
