@@ -4,7 +4,7 @@
 #Exemple de comment lancer la commande: Test-WebsiteStatus -URL "https://google.com"
 function Test_WebsiteStatus {
     param (
-        [string]$URL
+        [string]$URL #Déclaration de la variable URL qui va contenir un string de type https://google.com
     )
 
     $StartTime = Get-Date
@@ -64,7 +64,7 @@ function Test_WebsiteStatus {
 
 function WebsiteStatus_ToCSV {
     param (
-        [string[]]$Websites, #Paramètre qui va nous permettre de lister les pages webs désirés
+        [string[]]$Websites, #Paramètre qui va nous permettre de lister les pages webs désirés sous forme d'un string 
         [string]$LogFile = "C:\Logs\WebsiteStatus.csv"
     )
 
@@ -99,31 +99,33 @@ function WebsiteStatus_ToCSV {
 
 function Start_MonitoringLoop {
     param (
-        [string[]]$Websites,
-        [int]$IntervalMinutes = 5,
+        [string[]]$Websites, #Déclaration de la variable Website qui va contenir un string de type https://google.com
+        [int]$IntervalMinutes = 5, #Déclaration de la variable IntervalMinutes qui va contenir un nombre (Int) pour 5 minutes.
         [string]$LogFile = "C:\Logs\WebsiteStatus.csv"
     )
 
-    # Create log folder if it doesn't exist
+    #Création du fichier logs s'il n'éxiste pas.
     $logFolder = Split-Path $LogFile
     if (-not (Test-Path $logFolder)) {
         New-Item -ItemType Directory -Path $logFolder -Force | Out-Null
     }
 
-    # Create CSV header if the file doesn't exist
+    #Création de l'en-tête du fichier CSV s'il n'éxiste pas déjà. 
     if (-not (Test-Path $LogFile)) {
-        "Horodatage,URL,Statut" | Out-File -FilePath $LogFile -Encoding UTF8
+        "Temps,URL,Statut" | Out-File -FilePath $LogFile -Encoding UTF8
     }
 
-    Write-Host "Démarrage du monitoring toutes les $IntervalMinutes minute(s)... Appuyez sur CTRL+C pour arrêter." -ForegroundColor Cyan
+    #Message d'avertissement qui indique le scan commence et que nous pouvons faire CTRL+C pour arrêter le scan.
+    Write-Host "Démarrage du monitoring toutes les $IntervalMinutes minute(s)... Appuyez sur CTRL+C pour arrêter."
 
+    #Commencement de la boucle à l'infini jusqu'à ce que l'on fasse CTRL+C
     while ($true) {
-        foreach ($site in $Websites) {
+        foreach ($site in $Websites) { #Boucle while qui passe par les sites webs prédéfinis à chaque 2 minutes et attache la date et l'heure exacte au fichier CSV.
             $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
             $status = "ERROR"
 
             try {
-                $Headers = @{ "User-Agent" = "Mozilla/5.0" }
+                $Headers = @{ "User-Agent" = "Mozilla/5.0" } #Requete pour avoir les informations en utilisant Invoke-WebRequest
                 $response = Invoke-WebRequest -Uri $site -Headers $Headers -UseBasicParsing -TimeoutSec 5
                 $status = $response.StatusCode
             } catch {
@@ -137,27 +139,33 @@ function Start_MonitoringLoop {
     }
 }
 
-function Send-DowntimeAlert {
+function Show-WebsiteStatusSummary {
     param (
-        [string]$Website,
-        [string]$RecipientEmail,
-        [string]$SMTPServer = "smtp.example.com",
-        [string]$SenderEmail = "alert@example.com"
+        [string]$LogFile = "C:\Logs\WebsiteStatus.csv"
     )
 
-    $Subject = "⚠️ Website Down Alert: $Website"
-    $Body = "The website $Website is currently unreachable."
-
-    $SMTPParams = @{
-        To       = $RecipientEmail
-        From     = $SenderEmail
-        Subject  = $Subject
-        Body     = $Body
-        SmtpServer = $SMTPServer
+    if (-not (Test-Path $LogFile)) {
+        Write-Host "Fichier de log introuvable : $LogFile" -ForegroundColor Red
+        return
     }
 
-    Send-MailMessage @SMTPParams
+    $data = Import-Csv -Path $LogFile
+
+    $summary = $data | Group-Object -Property URL | ForEach-Object {
+        $url = $_.Name
+        $total = $_.Group.Count
+        $success = ($_.Group | Where-Object { $_.Statut -eq "200" }).Count
+        $fail = $total - $success
+
+        [PSCustomObject]@{
+            Site = $url
+            Vérifications = $total
+            Succès = $success
+            Échecs = $fail
+        }
+    }
+
+    $summary | Format-Table -AutoSize
 }
 
-#How to use it: Send-DowntimeAlert -Website "https://example.com" -RecipientEmail "admin@example.com"
 
