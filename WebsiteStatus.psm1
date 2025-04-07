@@ -134,8 +134,12 @@ function Start_MonitoringLoop {
         "Temps,URL,Statut" | Out-File -FilePath $LogFile -Encoding UTF8
     }
 
+    $StartTime = Get-Date -Format "dd-MM-yyyy HH:mm:ss"
+
     #Message d'avertissement qui indique le scan commence et que nous pouvons faire CTRL+C pour arrêter le scan.
-    Write-Host "Démarrage du monitoring toutes les $IntervalMinutes minute(s)... Appuyez sur CTRL+C pour arrêter."
+    Write-Host "Démarrage du monitoring toutes les $IntervalMinutes minutes... Appuyez sur CTRL+C pour arrêter."
+    Write-Host "Début du scan à $startTime" -ForegroundColor Yellow
+    
 
     #Commencement de la boucle à l'infini jusqu'à ce que l'on fasse CTRL+C
     while ($true) {
