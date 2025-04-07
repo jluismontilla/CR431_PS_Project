@@ -158,7 +158,7 @@ function Start_MonitoringLoop {
     }
 }
 
-function Show-WebsiteStatusSummary {
+function Show_WebsiteStatusSummary {
     param (
         [string]$LogFile = "C:\Logs\WebsiteStatus.csv" #Chemin vers le fichier CSV à analyser
     )
