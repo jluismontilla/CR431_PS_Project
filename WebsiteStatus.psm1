@@ -7,7 +7,7 @@
 #Cette fonction permet de tester si une page web au choix est active ou non en retournant un TRUE ou FALSE.
 #Cette fonction 
 #Exemple de comment lancer la commande: Test-WebsiteStatus -URL "https://google.com"
-function Test_WebsiteStatus {
+function Up_Or_Down {
     param (
         [string]$URL #Déclaration de la variable URL qui va contenir un string de type https://google.com
     )
