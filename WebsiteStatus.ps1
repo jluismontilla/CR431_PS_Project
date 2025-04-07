@@ -1,3 +1,8 @@
+#Projet pour le cours CR431 à remettre le 11 avril 2025
+
+#Ce projet à pour but de monitorer les pages webs désirées pour avoir leur statuts en ligne. Je suis technicien informatique et je dois souvent garder un oeil sur certaines pages
+#webs qui sont reliés ou en parties reliés à mon travail. Je pense que ce projet va grandement m'aider à automatiser le tout pour ne pas être constament entrain d'utiliser des sites comme 
+#https://www.isitdownrightnow.com/ ou même être toujours entrain d'envoyer des pings pour savoir si le problème viens de notre côté ou si c'est la page web qui est innacessible.
 
 #Cette fonction permet de tester si une page web au choix est active ou non en retournant un TRUE ou FALSE.
 #Cette fonction 
@@ -7,28 +12,30 @@ function Test_WebsiteStatus {
         [string]$URL #Déclaration de la variable URL qui va contenir un string de type https://google.com
     )
 
-    $StartTime = Get-Date
-    $Latency = "N/A"
-    $PageLoadTime = "N/A"
+    $StartTime = Get-Date #Démarre le temps avec la variable Get-Date qui nous donne l'heure et la date
+    $Latency = "N/A" #Déclaration de la variable Latency à N/A
+    $PageLoadTime = "N/A" #Déclaration de la variable PageLoadTime à N/A
 
     try {
         
-        # Set up the request with a fake User-Agent
+        #Définition du Header HTTP 'User-Agent' pour simuler un navigateur Chrome réel
+        #Ceci permet d'éviter d'être bloqué par certains sites web qui filtrent les requêtes automatiques
+        #Demandé l'aide du prof pour cette section
         $Headers = @{
             "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
 
-        # Measure request latency
-        $RequestStart = Get-Date
-        $Response = Invoke-WebRequest -Uri $URL -Headers $Headers -UseBasicParsing -TimeoutSec 5
-        $RequestEnd = Get-Date
+        
+        $RequestStart = Get-Date #Lancement du chronomètre pour mesurer la latence du serveur
+        $Response = Invoke-WebRequest -Uri $URL -Headers $Headers -UseBasicParsing -TimeoutSec 5 #Envoie de la requête HTTP au site web spécifié
+        $RequestEnd = Get-Date #Fin du chronomètre après avoir reçus la réponse
 
-        $Latency = ($RequestEnd - $RequestStart).TotalMilliseconds  #Temps de reponse pour latence site actif
+        $Latency = ($RequestEnd - $RequestStart).TotalMilliseconds  #Calcul de latence entre l'envoi et la réception de réponse
         $PageLoadTime = ($RequestEnd - $StartTime).TotalMilliseconds  #Temps total pour ouvrir la page web si active
 
-        if ($Response.StatusCode -eq 200) {
+        if ($Response.StatusCode -eq 200) { #Si le code HTTP returné est 200 qui signifie un succès, alors on affiche un message en ASCII
 
-            #Imprime ecran des resultats avec une ecriture en art ASCII que j'ai fais sur https://patorjk.com
+            #Imprime écran des résultats avec une écriture en art ASCII que j'ai fais sur https://patorjk.com
             Write-Output "
   
   _    _ _______ _______ _____    ___   ___   ___                 _   _  __ 
@@ -40,16 +47,17 @@ function Test_WebsiteStatus {
                                                                             
                                                                             
 "
-            Write-Output "Latence: $Latency ms"
-            Write-Output "Temps de chargement de la page: $PageLoadTime ms"
-            return $true
+            Write-Output "Latence: $Latency ms" #Affiche la lentence en millisecondes
+            Write-Output "Temps de chargement de la page: $PageLoadTime ms" #Affiche le temps total de chargement
+            return $true #Retourne VRAI pour indiquer que le site web est en ligne
         }
     }
-    catch {
-        $RequestEnd = Get-Date
-        $Latency = ($RequestEnd - $StartTime).TotalMilliseconds  #Temp de latence pour page web non disponible
+    catch { #Si la requête échoue alors...
+        $RequestEnd = Get-Date                                    #}
+                                                                    #Enregistre le moment de l'échec et calcul la latence jusqu'à l'erreur
+        $Latency = ($RequestEnd - $StartTime).TotalMilliseconds   #}
 
-        #Imprime ecran des resultats avec une ecriture en art ASCII que j'ai fais sur https://patorjk.com
+        #Imprime écran des résultats avec une écriture en art ASCII que j'ai fais sur https://patorjk.com
         Write-Output "
  
   _    _ _______ _______ _____    ______                            ___   ___   ___  
@@ -61,9 +69,9 @@ function Test_WebsiteStatus {
                                                                                      
                                                                                      
 "
-        Write-Output "Latence: $Latency ms"
-        Write-Output "Temps de chargement de la page: Non disponible"
-        return $false
+        Write-Output "Latence: $Latency ms" #Affiche la lentence en millisecondes
+        Write-Output "Temps de chargement de la page: Non disponible" #Pas de temp de chargement calculable
+        return $false #Retourne FAUX pour indiquer une erreur ou un site non-actif
     }
 }
 
@@ -72,37 +80,40 @@ function Test_WebsiteStatus {
 
 function WebsiteStatus_ToCSV {
     param (
-        [string[]]$Websites, #Paramètre qui va nous permettre de lister les pages webs désirés sous forme d'un string 
-        [string]$LogFile = "C:\Logs\WebsiteStatus.csv"
+        [string[]]$Websites, #Variable Websites qui va nous permettre de lister les pages webs désirés sous forme d'un string 
+        [string]$LogFile = "C:\Logs\WebsiteStatus.csv" #Variable LogFile qui montre le chemin vers le fichier CSV
     )
 
-    # Create log folder if it doesn't exist
-    $logFolder = Split-Path $LogFile
+    
+    $logFolder = Split-Path $LogFile #On récupère le dossier contenant le fichier log
     if (-not (Test-Path $logFolder)) {
-        New-Item -ItemType Directory -Path $logFolder -Force | Out-Null #Creation du fichier Logs sous C:\Logs s'il n'existe pas.
+        New-Item -ItemType Directory -Path $logFolder -Force | Out-Null #Création du dossier Logs sous C:\Logs s'il n'existe pas.
     }
 
     foreach ($site in $Websites) { #Boucle qui passe par chaque page web listé pour avoir son status (200,300,400)
-        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-        $status = "ERROR"
+        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss" #Enregistre la date et l'heure actuelle
+        $status = "ERROR" #Variable de statut en vas d'échec
 
         try {
+            #Définition du Header HTTP 'User-Agent' pour simuler un navigateur Chrome réel
+            #Ceci permet d'éviter d'être bloqué par certains sites web qui filtrent les requêtes automatiques
+            #Demandé l'aide du prof pour cette section
             $Headers = @{
-                "User-Agent" = "Mozilla/5.0" #Si je ne me fait pas passer par un faux moteur de recherche sur mon laptop, je n'est aucune donnée. Ceci m'a été recommandé par ChatGPT.
+               "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
             }
             #Invoke-WebRequest envoie une requete HTTP GET à l'URL dans $site. -Headers inclus le faux moteur de recherche si-haut et -TimeoutSec 5 retourne un "Error" si la page web ne répond pas après 5 secondes.
             $response = Invoke-WebRequest -Uri $site -Headers $Headers -TimeoutSec 5 
-            $status = $response.StatusCode
+            $status = $response.StatusCode #Si la requête réussit on obtient le code HTTP
         }
         catch {
-            
+                #On garde le statut ERROR en cas d'échec
         }
 
         #"$timestamp,$site,$status" vont être les titres de chaques colonne dans le fichier CSV. 
         "$timestamp,$site,$status" | Out-File -Append -FilePath $LogFile
     }
 
-    Write-Output "Monitoring terminé. Résultats dans le fichier Logs dans C:\Logs"
+    Write-Output "Monitoring terminé. Résultats dans le fichier Logs dans C:\Logs" #Message de confirmation dans le termninal une fois la fonction complété avec succès
 }
 
 function Start_MonitoringLoop {
@@ -112,13 +123,13 @@ function Start_MonitoringLoop {
         [string]$LogFile = "C:\Logs\WebsiteStatus.csv"
     )
 
-    #Création du fichier logs s'il n'éxiste pas.
-    $logFolder = Split-Path $LogFile
-    if (-not (Test-Path $logFolder)) {
+    
+    $logFolder = Split-Path $LogFile #On récupère le dossier contenant le fichier log
+    if (-not (Test-Path $logFolder)) { #Création du dossier logs s'il n'éxiste pas.
         New-Item -ItemType Directory -Path $logFolder -Force | Out-Null
     }
 
-    #Création de l'en-tête du fichier CSV s'il n'éxiste pas déjà. 
+    #Création du fichier CSV avec les en-têtes s'il n'éxiste pas déjà. 
     if (-not (Test-Path $LogFile)) {
         "Temps,URL,Statut" | Out-File -FilePath $LogFile -Encoding UTF8
     }
@@ -140,40 +151,40 @@ function Start_MonitoringLoop {
                 # Keep "ERROR" if request fails
             }
 
-            "$timestamp,$site,$status" | Out-File -Append -FilePath $LogFile -Encoding UTF8
+            "$timestamp,$site,$status" | Out-File -Append -FilePath $LogFile -Encoding UTF8 #Enregistre les résultats dans le fichier CSV
         }
 
-        Start-Sleep -Seconds ($IntervalMinutes * 60)
+        Start-Sleep -Seconds ($IntervalMinutes * 60) #Pause en secondes avant de recommencer la boucle
     }
 }
 
 function Show-WebsiteStatusSummary {
     param (
-        [string]$LogFile = "C:\Logs\WebsiteStatus.csv"
+        [string]$LogFile = "C:\Logs\WebsiteStatus.csv" #Chemin vers le fichier CSV à analyser
     )
 
-    if (-not (Test-Path $LogFile)) {
+    if (-not (Test-Path $LogFile)) { #Si le fichier CSV n'existe pas, on affiche un message d'erreur en couleur rouge
         Write-Host "Fichier de log introuvable : $LogFile" -ForegroundColor Red
         return
     }
 
-    $data = Import-Csv -Path $LogFile
+    $data = Import-Csv -Path $LogFile #import les données du fichier CSV dans la variable data
 
-    $summary = $data | Group-Object -Property URL | ForEach-Object {
-        $url = $_.Name
-        $total = $_.Group.Count
-        $success = ($_.Group | Where-Object { $_.Statut -eq "200" }).Count
-        $fail = $total - $success
+    $summary = $data | Group-Object -Property URL | ForEach-Object { #On groupe les entrées du CSV par URL et par groupe
+        $url = $_.Name #nom du site web
+        $total = $_.Group.Count #Nombre total de vérifications 
+        $success = ($_.Group | Where-Object { $_.Statut -eq "200" }).Count #Nombre de vérifications réussies
+        $fail = $total - $success #Nombre d'échec, toute autre réponse différent au code HTTP 200
 
-        [PSCustomObject]@{
+        [PSCustomObject]@{ #Retour d'objet personnalisé qui contient les statistiques par site web
             Site = $url
-            Vérifications = $total
-            Succès = $success
-            Échecs = $fail
+            Verifications = $total
+            Succes = $success
+            Echecs = $fail
         }
     }
 
-    $summary | Format-Table -AutoSize
+    $summary | Format-Table -AutoSize #Imprime le résumé sous forme de tableau dans le terminal
 }
 
 
