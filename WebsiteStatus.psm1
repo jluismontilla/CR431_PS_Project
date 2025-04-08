@@ -3,6 +3,7 @@
 #Ce projet à pour but de monitorer les pages webs désirées pour avoir leur statuts en ligne. Je suis technicien informatique et je dois souvent garder un oeil sur certaines pages
 #webs qui sont reliés ou en parties reliés à mon travail. Je pense que ce projet va grandement m'aider à automatiser le tout pour ne pas être constament entrain d'utiliser des sites comme 
 #https://www.isitdownrightnow.com/ ou même être toujours entrain d'envoyer des pings pour savoir si le problème viens de notre côté ou si c'est la page web qui est innacessible.
+#Inspiration pour ce projet: https://www.codeproject.com/Articles/1214947/Http-Monitor-using-Powershell
 
 #Cette fonction permet de tester si une page web au choix est active ou non en retournant un TRUE ou FALSE.
 #Cette fonction 
@@ -16,7 +17,7 @@ function Up_Or_Down {
     $Latency = "N/A" #Déclaration de la variable Latency à N/A
     $PageLoadTime = "N/A" #Déclaration de la variable PageLoadTime à N/A
 
-    try { #Ref pour Try et Catch: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_try_catch_finally?view=powershell-7.5
+    try { #Referenceerence  pour Try et Catch: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_try_catch_finally?view=powershell-7.5
         
         #Définition du Header HTTP 'User-Agent' pour simuler un navigateur Chrome réel
         #Ceci permet d'éviter d'être bloqué par certains sites web qui filtrent les requêtes automatiques
@@ -27,13 +28,13 @@ function Up_Or_Down {
 
         
         $RequestStart = Get-Date #Lancement du chronomètre pour mesurer la latence du serveur
-        $Response = Invoke-WebRequest -Uri $URL -Headers $Headers -UseBasicParsing -TimeoutSec 5 #Envoie de la requête HTTP au site web spécifié Ref: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/invoke-webrequest?view=powershell-7.5
+        $Response = Invoke-WebRequest -Uri $URL -Headers $Headers -UseBasicParsing -TimeoutSec 5 #Envoie de la requête HTTP au site web spécifié Reference: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/invoke-webrequest?view=powershell-7.5
         $RequestEnd = Get-Date #Fin du chronomètre après avoir reçus la réponse
 
         $Latency = ($RequestEnd - $RequestStart).TotalMilliseconds  #Calcul de latence entre l'envoi et la réception de réponse
         $PageLoadTime = ($RequestEnd - $StartTime).TotalMilliseconds  #Temps total pour ouvrir la page web si active
 
-        if ($Response.StatusCode -eq 200) { #Si le code HTTP returné est 200 qui signifie un succès, alors on affiche un message en ASCII Ref: https://www.w3schools.com/tags/ref_httpmessages.asp
+        if ($Response.StatusCode -eq 200) { #Si le code HTTP returné est 200 qui signifie un succès, alors on affiche un message en ASCII Reference: https://www.w3schools.com/tags/ref_httpmessages.asp
 
             #Imprime écran des résultats avec une écriture en art ASCII que j'ai fais sur https://patorjk.com
             Write-Output "
@@ -102,7 +103,7 @@ function WebsiteStatus_ToCSV {
         $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss" #Enregistre la date et l'heure actuelle
         $status = "ERROR" #Variable de statut en vas d'échec
 
-        try { #Ref pour Try, Catch et Finally: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_try_catch_finally?view=powershell-7.5
+        try { #Reference pour Try, Catch et Finally: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_try_catch_finally?view=powershell-7.5
 
             #Définition du Header HTTP 'User-Agent' pour simuler un navigateur Chrome réel
             #Ceci permet d'éviter d'être bloqué par certains sites web qui filtrent les requêtes automatiques
@@ -167,8 +168,8 @@ function Start_MonitoringLoop {
                     #Ceci permet d'éviter d'être bloqué par certains sites web qui filtrent les requêtes automatiques
                     #Demandé l'aide du prof pour cette section
                     $Headers = @{"User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"} 
-                    $response = Invoke-WebRequest -Uri $site -Headers $Headers -UseBasicParsing -TimeoutSec 5 #Envoie la requete HTTP avec un timeout de 5 secondes Ref: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/invoke-webrequest?view=powershell-7.5
-                    $status = $response.StatusCode #Si la requete réussit, alors nous obtenons le code HTTP (200, 300, 400) Ref:https://www.w3schools.com/tags/ref_httpmessages.asp
+                    $response = Invoke-WebRequest -Uri $site -Headers $Headers -UseBasicParsing -TimeoutSec 5 #Envoie la requete HTTP avec un timeout de 5 secondes Reference: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/invoke-webrequest?view=powershell-7.5
+                    $status = $response.StatusCode #Si la requete réussit, alors nous obtenons le code HTTP (200, 300, 400) Reference:https://www.w3schools.com/tags/ref_httpmessages.asp
                 } catch {
                     #Le status reste "ERROR" si une erreur survient
                 }
@@ -183,7 +184,7 @@ function Start_MonitoringLoop {
     
         Write-Host "Monitoring terminé. Résultats dans le fichier Logs dans $LogFile" #Message de fin de boucle avec destination du fichier CSV
 
-        #Ref pour Try, Catch et Finally: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_try_catch_finally?view=powershell-7.5
+        #Reference pour Try, Catch et Finally: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_try_catch_finally?view=powershell-7.5
     }
 }
 
@@ -191,18 +192,18 @@ function Show_WebsiteStatusSummary {
     param (
         [string]$LogFile, #Chemin vers le fichier CSV à analyser
         [int]$MinSuccessRate = 0, #Variable pou afficher seulement 
-        [switch]$GridView
+        [switch]$GridView #Affiche le résumé du fichier CSV dans le terminal
 
     )
 
     $data = Import-Csv -Path $LogFile #import les données du fichier CSV dans la variable data
 
-    $summary = $data | Group-Object -Property URL | ForEach-Object {
+    $summary = $data | Group-Object -Property URL | ForEach-Object { #Enregistre chaque stat sur chaque URL pour ensuite les calculer
         $url = $_.Name
         $total = $_.Group.Count
         $success = ($_.Group | Where-Object { $_.Statut -eq "200" }).Count
         $fail = $total - $success
-        $successRate = if ($total -gt 0) { [math]::Round(($success / $total) * 100, 2) } else { 0 }
+        $successRate = if ($total -gt 0) { [math]::Round(($success / $total) * 100, 2) } else { 0 } #Reference: https://ss64.com/ps/syntax-math.html
 
         if ($successRate -gt $MinSuccessRate) {
             [PSCustomObject]@{
@@ -213,10 +214,11 @@ function Show_WebsiteStatusSummary {
                 TauxSucces = "$successRate%"
             }
         }
-    } | Where-Object {$_ -ne $null}
+    } | Where-Object {$_ -ne $null} #Filtre pour garder seulement les objets avec succes
 
     if ($GridView){
-        $summary | Out-GridView -Title "Résumé de l'état des sites web"
+        $summary | Out-GridView -Title "Résumé de l'état des sites web" #Affiche la grille dans le terminal si l'utilisateur l'active avec -GridView
+                                                                        #Reference: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/out-gridview?view=powershell-7.5
     }
 
     $summary | Format-Table -AutoSize #Imprime le résumé sous forme de tableau dans le terminal
