@@ -16,7 +16,7 @@ function Up_Or_Down {
     $Latency = "N/A" #Déclaration de la variable Latency à N/A
     $PageLoadTime = "N/A" #Déclaration de la variable PageLoadTime à N/A
 
-    try {
+    try { #Ref pour Try et Catch: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_try_catch_finally?view=powershell-7.5
         
         #Définition du Header HTTP 'User-Agent' pour simuler un navigateur Chrome réel
         #Ceci permet d'éviter d'être bloqué par certains sites web qui filtrent les requêtes automatiques
@@ -27,13 +27,13 @@ function Up_Or_Down {
 
         
         $RequestStart = Get-Date #Lancement du chronomètre pour mesurer la latence du serveur
-        $Response = Invoke-WebRequest -Uri $URL -Headers $Headers -UseBasicParsing -TimeoutSec 5 #Envoie de la requête HTTP au site web spécifié
+        $Response = Invoke-WebRequest -Uri $URL -Headers $Headers -UseBasicParsing -TimeoutSec 5 #Envoie de la requête HTTP au site web spécifié Ref: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/invoke-webrequest?view=powershell-7.5
         $RequestEnd = Get-Date #Fin du chronomètre après avoir reçus la réponse
 
         $Latency = ($RequestEnd - $RequestStart).TotalMilliseconds  #Calcul de latence entre l'envoi et la réception de réponse
         $PageLoadTime = ($RequestEnd - $StartTime).TotalMilliseconds  #Temps total pour ouvrir la page web si active
 
-        if ($Response.StatusCode -eq 200) { #Si le code HTTP returné est 200 qui signifie un succès, alors on affiche un message en ASCII
+        if ($Response.StatusCode -eq 200) { #Si le code HTTP returné est 200 qui signifie un succès, alors on affiche un message en ASCII Ref: https://www.w3schools.com/tags/ref_httpmessages.asp
 
             #Imprime écran des résultats avec une écriture en art ASCII que j'ai fais sur https://patorjk.com
             Write-Output "
@@ -80,21 +80,30 @@ function Up_Or_Down {
 
 function WebsiteStatus_ToCSV {
     param (
-        [string[]]$Websites, #Variable Websites qui va nous permettre de lister les pages webs désirés sous forme d'un string 
-        [string]$LogFile = "C:\Logs\WebsiteStatus.csv" #Variable LogFile qui montre le chemin vers le fichier CSV
+        [string[]]$URL, #Variable Websites qui va nous permettre de lister les pages webs désirés sous forme d'un string 
+        [string]$LogFile #Variable LogFile qui permet de spécifier l'endroit de sauvegarde du fichier CSV
     )
 
+    if (-not ($LogFile -like '*.csv')) { #Vérification que le fichier qui va être enregistré est bel et bien un fichier CSV
+        Write-Host "Le parametre -LogFile doit contenir un nom de fichier avec l'extension .csv (ex Logs.csv)" -ForegroundColor Red #Imprime ecran qui alerte l'utilisateur d'un problème avec l'extension du fichier en rouge
+        return
+    }
     
-    $logFolder = Split-Path $LogFile #On récupère le dossier contenant le fichier log
+    $logFolder = Split-Path $LogFile
     if (-not (Test-Path $logFolder)) {
-        New-Item -ItemType Directory -Path $logFolder -Force | Out-Null #Création du dossier Logs sous C:\Logs s'il n'existe pas.
+        New-Item -ItemType Directory -Path $logFolder -Force | Out-Null
     }
 
-    foreach ($site in $Websites) { #Boucle qui passe par chaque page web listé pour avoir son status (200,300,400)
+    if (-not (Test-Path $LogFile)) {  #Ajoute l’en-tête uniquement si le fichier n'existe pas encore
+        "Temps,URL,Statut" | Out-File -FilePath $LogFile -Encoding UTF8
+    }
+
+    foreach ($site in $URL) { #Boucle qui passe par chaque page web listé pour avoir son status (200,300,400)
         $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss" #Enregistre la date et l'heure actuelle
         $status = "ERROR" #Variable de statut en vas d'échec
 
-        try {
+        try { #Ref pour Try, Catch et Finally: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_try_catch_finally?view=powershell-7.5
+
             #Définition du Header HTTP 'User-Agent' pour simuler un navigateur Chrome réel
             #Ceci permet d'éviter d'être bloqué par certains sites web qui filtrent les requêtes automatiques
             #Demandé l'aide du prof pour cette section
@@ -113,24 +122,29 @@ function WebsiteStatus_ToCSV {
         "$timestamp,$site,$status" | Out-File -Append -FilePath $LogFile
     }
 
-    Write-Output "Monitoring terminé. Résultats dans le fichier Logs dans C:\Logs" #Message de confirmation dans le termninal une fois la fonction complété avec succès
+    Write-Output "Monitoring terminé. Résultats dans le fichier Logs dans $LogFile" #Message de confirmation dans le termninal une fois la fonction complété avec succès
 }
 
 function Start_MonitoringLoop {
     param (
-        [string[]]$Websites, #Déclaration de la variable Website qui va contenir un string de type https://google.com
-        [int]$IntervalMinutes = 5, #Déclaration de la variable IntervalMinutes qui va contenir un nombre (Int) pour 5 minutes.
-        [string]$LogFile = "C:\Logs\WebsiteStatus.csv"
+        [string[]]$URL, #Déclaration de la variable Website qui va contenir un string de type https://google.com
+        [int]$IntervalMinutes, #Déclaration de la variable IntervalMinutes qui va contenir un nombre (Int) pour x nombres de minutes.
+        [string]$LogFile
     )
 
     
-    $logFolder = Split-Path $LogFile #On récupère le dossier contenant le fichier log
-    if (-not (Test-Path $logFolder)) { #Création du dossier logs s'il n'éxiste pas.
+    if (-not ($LogFile -like '*.csv')) { #Vérification que le fichier qui va être enregistré est bel et bien un fichier CSV
+        Write-Host "Le parametre -LogFile doit contenir un nom de fichier avec l'extension .csv (ex Logs.csv)" -ForegroundColor Red #Imprime ecran qui alerte l'utilisateur d'un problème avec l'extension du fichier en rouge
+        return
+    }
+    
+    $logFolder = Split-Path $LogFile
+    if (-not (Test-Path $logFolder)) {
         New-Item -ItemType Directory -Path $logFolder -Force | Out-Null
     }
 
-    #Création du fichier CSV avec les en-têtes s'il n'éxiste pas déjà. 
-    if (-not (Test-Path $LogFile)) {
+   
+    if (-not (Test-Path $LogFile)) {  #Ajoute l’en-tête uniquement si le fichier n'existe pas encore
         "Temps,URL,Statut" | Out-File -FilePath $LogFile -Encoding UTF8
     }
 
@@ -141,51 +155,68 @@ function Start_MonitoringLoop {
     Write-Host "Début du scan à $startTime" -ForegroundColor Yellow
     
 
-    #Commencement de la boucle à l'infini jusqu'à ce que l'on fasse CTRL+C
-    while ($true) {
-        foreach ($site in $Websites) { #Boucle while qui passe par les sites webs prédéfinis à chaque 2 minutes et attache la date et l'heure exacte au fichier CSV.
-            $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-            $status = "ERROR"
+    
+    try { #Ce try est simplement là pour que le message ''Monitoring terminé. Résultats dans le fichier...'' puisse s'afficher lorsque l'utilisateur fasse CTRL + C 
+        while ($true) { #Tant que l'utilisateur n'arrête pas la boucle alors...
+            foreach ($site in $URL) { #Pour chaque site dans la liste d'URL spécifié par l'utilisateur
+                $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss" #Applique la date et l'heure dans timestamp
+                $status = "ERROR" #Applique le string erreur à $status au cas ou le site web n'est pas accessible
 
-            try {
-                $Headers = @{ "User-Agent" = "Mozilla/5.0" } #Requete pour avoir les informations en utilisant Invoke-WebRequest
-                $response = Invoke-WebRequest -Uri $site -Headers $Headers -UseBasicParsing -TimeoutSec 5
-                $status = $response.StatusCode
-            } catch {
-                # Keep "ERROR" if request fails
+                try { 
+                    #Définition du Header HTTP 'User-Agent' pour simuler un navigateur Chrome réel
+                    #Ceci permet d'éviter d'être bloqué par certains sites web qui filtrent les requêtes automatiques
+                    #Demandé l'aide du prof pour cette section
+                    $Headers = @{"User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"} 
+                    $response = Invoke-WebRequest -Uri $site -Headers $Headers -UseBasicParsing -TimeoutSec 5 #Envoie la requete HTTP avec un timeout de 5 secondes Ref: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/invoke-webrequest?view=powershell-7.5
+                    $status = $response.StatusCode #Si la requete réussit, alors nous obtenons le code HTTP (200, 300, 400) Ref:https://www.w3schools.com/tags/ref_httpmessages.asp
+                } catch {
+                    #Le status reste "ERROR" si une erreur survient
+                }
+
+                "$timestamp,$site,$status" | Out-File -Append -FilePath $LogFile -Encoding UTF8 #Enregiste le résultat dans le fichier CSV
             }
 
-            "$timestamp,$site,$status" | Out-File -Append -FilePath $LogFile -Encoding UTF8 #Enregistre les résultats dans le fichier CSV
+            Start-Sleep -Seconds ($IntervalMinutes * 60) #Attend le nombre de minutes spécifié avant de refaire une boucle
         }
+    }
+    finally { #Ceci s'execute lorsque CTRL + C est entré par l'utilisateur
+    
+        Write-Host "Monitoring terminé. Résultats dans le fichier Logs dans $LogFile" #Message de fin de boucle avec destination du fichier CSV
 
-        Start-Sleep -Seconds ($IntervalMinutes * 60) #Pause en secondes avant de recommencer la boucle
+        #Ref pour Try, Catch et Finally: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_try_catch_finally?view=powershell-7.5
     }
 }
 
 function Show_WebsiteStatusSummary {
     param (
-        [string]$LogFile = "C:\Logs\WebsiteStatus.csv" #Chemin vers le fichier CSV à analyser
-    )
+        [string]$LogFile, #Chemin vers le fichier CSV à analyser
+        [int]$MinSuccessRate = 0, #Variable pou afficher seulement 
+        [switch]$GridView
 
-    if (-not (Test-Path $LogFile)) { #Si le fichier CSV n'existe pas, on affiche un message d'erreur en couleur rouge
-        Write-Host "Fichier de log introuvable : $LogFile" -ForegroundColor Red
-        return
-    }
+    )
 
     $data = Import-Csv -Path $LogFile #import les données du fichier CSV dans la variable data
 
-    $summary = $data | Group-Object -Property URL | ForEach-Object { #On groupe les entrées du CSV par URL et par groupe
-        $url = $_.Name #nom du site web
-        $total = $_.Group.Count #Nombre total de vérifications 
-        $success = ($_.Group | Where-Object { $_.Statut -eq "200" }).Count #Nombre de vérifications réussies
-        $fail = $total - $success #Nombre d'échec, toute autre réponse différent au code HTTP 200
+    $summary = $data | Group-Object -Property URL | ForEach-Object {
+        $url = $_.Name
+        $total = $_.Group.Count
+        $success = ($_.Group | Where-Object { $_.Statut -eq "200" }).Count
+        $fail = $total - $success
+        $successRate = if ($total -gt 0) { [math]::Round(($success / $total) * 100, 2) } else { 0 }
 
-        [PSCustomObject]@{ #Retour d'objet personnalisé qui contient les statistiques par site web
-            Site = $url
-            Verifications = $total
-            Succes = $success
-            Echecs = $fail
+        if ($successRate -gt $MinSuccessRate) {
+            [PSCustomObject]@{
+                Site = $url
+                Verifications = $total
+                Succes = $success
+                Echecs = $fail
+                TauxSucces = "$successRate%"
+            }
         }
+    } | Where-Object {$_ -ne $null}
+
+    if ($GridView){
+        $summary | Out-GridView -Title "Résumé de l'état des sites web"
     }
 
     $summary | Format-Table -AutoSize #Imprime le résumé sous forme de tableau dans le terminal
