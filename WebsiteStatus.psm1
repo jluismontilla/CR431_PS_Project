@@ -191,7 +191,7 @@ function Start_MonitoringLoop {
 function Show_WebsiteStatusSummary {
     param (
         [string]$LogFile, #Chemin vers le fichier CSV à analyser
-        [int]$MinSuccessRate = 0, #Variable pou afficher seulement 
+        [int]$MinSuccessRate, #Variable pou afficher seulement les sites ayant un taux de succès supérieur à cette valeur
         [switch]$GridView #Affiche le résumé du fichier CSV dans le terminal
 
     )
@@ -203,15 +203,21 @@ function Show_WebsiteStatusSummary {
         $total = $_.Group.Count
         $success = ($_.Group | Where-Object { $_.Statut -eq "200" }).Count
         $fail = $total - $success
-        $successRate = if ($total -gt 0) { [math]::Round(($success / $total) * 100, 2) } else { 0 } #Reference: https://ss64.com/ps/syntax-math.html
+        
+        $successRate = if ($total -gt 0){
+            
+         [math]::Round(($success / $total) * 100, 2) #Reference: https://ss64.com/ps/syntax-math.html
+         } else {
+            0
+         } 
 
-        if ($successRate -gt $MinSuccessRate) {
+        if ($successRate -ge $MinSuccessRate) { #Si le taux de succès est plus grand ou égale à  n, on retourne les données du site web
             [PSCustomObject]@{
                 Site = $url
                 Verifications = $total
                 Succes = $success
                 Echecs = $fail
-                TauxSucces = "$successRate%"
+                TauxSucces = "$successRate%" #Affiche  le pourcentage de succes
             }
         }
     } | Where-Object {$_ -ne $null} #Filtre pour garder seulement les objets avec succes
